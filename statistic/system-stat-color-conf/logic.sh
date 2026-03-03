@@ -1,5 +1,4 @@
-#!/bin/bash
-
+# ===== Сбор данных =====
 # Timezone
 offset_raw=$(date +%z)
 sign=${offset_raw:0:1}
@@ -35,25 +34,25 @@ ip=${ip%/*}
 
 # Netmask
 cidr_to_netmask() {
-    netmask=""
+    local netmask=""
     local cidr=$1
     local full_octets=$((cidr/8))
     local nonet_bits=$((cidr%8))
 
     for i in {1..4}; do
-	    if (( $i <= $full_octets )); then octet=255
+        if (( $i <= $full_octets )); then
+            octet=255
         elif (( $i == $full_octets + 1 )); then
-	    octet=$(( 256 - 2**(8 - nonet_bits) ))
-	else
-	    octet=0
-	fi
+            octet=$(( 256 - 2**(8 - nonet_bits) ))
+        else
+            octet=0
+        fi
 
-	netmask+=$octet
-	if [[ $i < 4 ]]; then
-	    netmask+="."
-	fi
+        netmask+=$octet
+        if [[ $i < 4 ]]; then
+            netmask+="."
+        fi
     done
-
     echo $netmask
 }
 netmask=$(cidr_to_netmask $cidr)
@@ -72,48 +71,3 @@ read -r space_root_kb space_root_used_kb space_root_free_kb < <(df / | awk '/\/$
 space_root_mb=$(awk "BEGIN {printf \"%.2f\", $space_root_kb/1024}")
 space_root_used_mb=$(awk "BEGIN {printf \"%.2f\", $space_root_used_kb/1024}")
 space_root_free_mb=$(awk "BEGIN {printf \"%.2f\", $space_root_free_kb/1024}")
-
-
-
-echo "HOSTNAME = $HOSTNAME"
-echo "TIMEZONE = $timezone"
-echo "USER = $USER"
-echo "OS = $os_info"
-echo "DATE = $(date +"%d %b %Y %H:%M:%S")"
-echo "UPTIME = $uptime"
-echo "UPTIME_SEC = $uptime_sec sec"
-echo "IP = ${ip:-N/A}"
-echo "MASK = ${netmask:-N/A}"
-echo "GATEWAY = ${Gateaway:-N/A}"
-echo "RAM_TOTAL = ${ram_total_gb} GB"
-echo "RAM_USED = ${ram_used_gb} GB"
-echo "RAM_FREE = ${ram_free_gb} GB"
-echo "SPACE_ROOT = ${space_root_mb} MB"
-echo "SPACE_ROOT_USED = ${space_root_used_mb} MB"
-echo "SPACE_ROOT_FREE = ${space_root_free_mb} MB"
-
-read -r -p "Save information to file? (Y/N): " ANSWER
-
-if [[ "$ANSWER" == "Y" || "$ANSWER" == "y" ]]; then
-    FILENAME=$(date +"%d_%m_%y_%H_%M_%S").status
-    {
-        echo "HOSTNAME = $HOSTNAME"
-        echo "TIMEZONE = $timezone"
-        echo "USER = $USER"
-        echo "OS = $os_info"
-        echo "DATE = $(date +"%d %b %Y %H:%M:%S")"
-        echo "UPTIME = $uptime"
-        echo "UPTIME_SEC = $uptime_sec sec"
-        echo "IP = ${ip:-N/A}"
-        echo "MASK = ${netmask:-N/A}"
-        echo "GATEWAY = ${Gateaway:-N/A}"
-        echo "RAM_TOTAL = ${ram_total_gb} GB"
-        echo "RAM_USED = ${ram_used_gb} GB"
-        echo "RAM_FREE = ${ram_free_gb} GB"
-        echo "SPACE_ROOT = ${space_root_mb} MB"
-        echo "SPACE_ROOT_USED = ${space_root_used_mb} MB"
-        echo "SPACE_ROOT_FREE = ${space_root_free_mb} MB"
-    } > $FILENAME
-    echo "Data saved to $FILENAME"
-fi
-
