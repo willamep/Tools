@@ -4,14 +4,6 @@ source ./help.sh
 source ./arg.sh
 source ./name_gen.sh
 
-# gen_stop() {
-# 
-# }
-# 
-# log() {
-# 
-# }
-
 gen_dir letters_dir
 
 for dir in "$path"*/; do

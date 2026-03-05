@@ -2,6 +2,25 @@
 
 date=$(date '+%d%m%y')
 
+log() {
+    local log="$1"
+    local file_size="$2"
+    local date_log=$(date '+%H:%M:%S-Day:%d_Mon:%m_Year:%y')
+    if [[ -z $file_size ]]; then
+        printf '%s---%s\n' $log $date_log >> "$path$date".log
+    else
+        printf '%s---%s---%skb\n' $log $date_log $file_size >> "$path$date".log
+    fi
+}
+
+gen_stop() {
+    available=$(df / | awk 'NR==2 {print $4}')
+    if (( $available<1048576 )); then
+        printf 'Место на диске осталось меньше 1G. Генерация остановлена'
+        exit 1
+    fi
+}
+
 # gen_dir и gen_file похожи, отличаются путём, способом создания и немного названиями
 # Метод генерации имени используется одинаковый 
 gen_dir() {
@@ -9,16 +28,18 @@ gen_dir() {
     local -A key # Ассоциативный массив для учёта количества знаков для вывода
     local name_len=$(init_name_len ${#letters[@]}) # Узнаём длину названия Заполняем ассоциативный массив и вычисляем количество знаков для 1 вывода
     init_first_position $name_len letters key
-
     # Генерируем папки и их названия
     for (( c=0; c<${dir_count}; c++ )); do
-        mkdir "${path}$(gen_name $name_len letters key)_$date" 2>/dev/null
+        gen_stop
+        local name="${path}$(gen_name $name_len letters key)_$date"
+        mkdir "$name" 2>/dev/null
+        log "$name"
         update_array name_len letters key
     done
 }
 
 gen_file() {
-    local path="$1"
+    local path_to_dir="$1"
     local -n letters=$2 # Индексный массив, содержащий все знаки и их порядок
     local -A key # Ассоциативный массив для учёта количества знаков для вывода
     local name_len=$(init_name_len ${#letters[@]}) # Узнаём длину названия Заполняем ассоциативный массив и вычисляем количество знаков для 1 вывода
@@ -26,7 +47,10 @@ gen_file() {
 
     # Генерируем папки и их названия
     for (( c=0; c<$file_count; c++ )); do
-        dd if=/dev/zero of="${path}$(gen_name $name_len letters key)_$date.$extention" bs=1K count=$file_size status=none
+        gen_stop
+        local name="${path_to_dir}$(gen_name $name_len letters key)_$date.$extention"
+        dd if=/dev/zero of="$name" bs=1K count=$file_size status=none
+        log "$name" $file_size
         update_array name_len letters key
     done
 }
